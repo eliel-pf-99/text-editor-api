@@ -1,13 +1,17 @@
 package notes
 
-import "context"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Handler interface {
-	InsertNote(ctx context.Context, note Note) (Note, error)
-	UpdateNote(ctx context.Context, note Note) (Note, error)
-	DeleteNote(ctx context.Context, id string) error
-	FindNoteById(ctx context.Context, id string) (Note, error)
-	GetNotes(ctx context.Context, user_id string) ([]Note, error)
+	InsertNote(ctx *gin.Context)
+	UpdateNote(ctx *gin.Context)
+	DeleteNote(ctx *gin.Context)
+	FindNoteById(ctx *gin.Context)
+	GetNotes(ctx *gin.Context)
 }
 
 type handler struct {
@@ -15,29 +19,103 @@ type handler struct {
 }
 
 // DeleteNote implements Handler.
-func (h *handler) DeleteNote(ctx context.Context, id string) error {
-	panic("unimplemented")
+func (h *handler) DeleteNote(ctx *gin.Context) {
+	var req NoteReq
+	if ctx.BindJSON(&req) != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read request",
+		})
+		return
+	}
+
+	err := h.service.DeleteNote(ctx, req.NoteID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read request",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Note deleted with success!",
+	})
 }
 
 // FindNoteById implements Handler.
-func (h *handler) FindNoteById(ctx context.Context, id string) (Note, error) {
-	panic("unimplemented")
+func (h *handler) FindNoteById(ctx *gin.Context) {
+	var req NoteReq
+	if ctx.BindJSON(&req) != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read request",
+		})
+		return
+	}
+
+	note, err := h.service.FindNoteById(ctx, req.NoteID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read request",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"note": note,
+	})
 }
 
 // GetNotes implements Handler.
-func (h *handler) GetNotes(ctx context.Context, user_id string) ([]Note, error) {
-	panic("unimplemented")
+func (h *handler) GetNotes(ctx *gin.Context) {
+	user := ctx.GetString("user")
+	notes, _ := h.service.GetNotes(ctx, user)
+	ctx.JSON(http.StatusOK, gin.H{"notes": notes})
 }
 
 // InsertNote implements Handler.
-func (h *handler) InsertNote(ctx context.Context, note Note) (Note, error) {
-	h.service.InsertNote(ctx, note)
-	return Note{}, nil
+func (h *handler) InsertNote(ctx *gin.Context) {
+	var noteCreate NoteCreate
+	if ctx.BindJSON(&noteCreate) != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read request",
+		})
+		return
+	}
+	note, err := h.service.InsertNote(ctx, AddUserId(noteCreate, ctx.GetString("user")))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to create note",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Note create with success",
+		"note":    note,
+	})
+
 }
 
 // UpdateNote implements Handler.
-func (h *handler) UpdateNote(ctx context.Context, note Note) (Note, error) {
-	panic("unimplemented")
+func (h *handler) UpdateNote(ctx *gin.Context) {
+	var note Note
+	if ctx.BindJSON(&note) != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read request",
+		})
+		return
+	}
+
+	_, err := h.service.UpdateNote(ctx, note)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read request",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Note update with success!",
+	})
 }
 
 func NewHandler(service Service) Handler {

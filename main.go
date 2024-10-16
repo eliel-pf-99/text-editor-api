@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"os"
 	"server/db"
+	"server/internal/notes"
 	"server/internal/users"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -19,18 +21,38 @@ func main() {
 
 	db_uri := os.Getenv("connectiondb")
 	db_name := os.Getenv("dbname")
-	collection_name := os.Getenv("collectionuser")
+	collection_user := os.Getenv("collectionuser")
+	collection_note := os.Getenv("collectionnote")
 	db, _ := db.NewConn(db_uri)
 	defer db.Close()
 
-	repository := users.NewRepository(db.GetDB(), db_name, collection_name)
-	service := users.NewService(repository)
-	handler := users.NewHandler(service)
+	user_repository := users.NewRepository(db.GetDB(), db_name, collection_user)
+	user_service := users.NewService(user_repository)
+	user_handler := users.NewHandler(user_service)
+
+	note_repository, _ := notes.NewRepository(db.GetDB(), db_name, collection_note)
+	note_service := notes.NewService(note_repository)
+	note_handler := notes.NewHandler(note_service)
 
 	r := gin.Default()
-	r.POST("/signup", handler.Signup)
-	r.POST("/login", handler.Login)
-	r.GET("/protect", handler.Auth, func(ctx *gin.Context) {
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: false,
+	}))
+
+	r.POST("/signup", user_handler.Signup)
+	r.POST("/login", user_handler.Login)
+
+	r.GET("/get-notes", user_handler.Auth, note_handler.GetNotes)
+	r.POST("/create-note", user_handler.Auth, note_handler.InsertNote)
+	r.POST("/update-note", user_handler.Auth, note_handler.UpdateNote)
+	r.POST("/get-note", user_handler.Auth, note_handler.FindNoteById)
+	r.POST("/delete-note", user_handler.Auth, note_handler.DeleteNote)
+
+	r.GET("/protect", user_handler.Auth, func(ctx *gin.Context) {
 		user, _ := ctx.Get("user")
 		ctx.JSON(http.StatusOK, gin.H{"name": user})
 	})

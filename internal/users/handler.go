@@ -49,7 +49,7 @@ func (h *handler) Auth(c *gin.Context) {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 
-		c.Set("user", user)
+		c.Set("user", user.ID)
 
 		c.Next()
 	} else {
@@ -93,7 +93,7 @@ func (h *handler) Signup(c *gin.Context) {
 // Login implements Handler.
 func (h *handler) Login(c *gin.Context) {
 	var body UserLogin
-	if c.Bind(&body) != nil {
+	if c.BindJSON(&body) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to read request",
 		})
@@ -103,14 +103,14 @@ func (h *handler) Login(c *gin.Context) {
 	user, err := h.service.FindUserByEmail(c, body.Email)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Email or password invalid",
+			"error": "User don't find ",
 		})
 		return
 	}
 
 	if !CheckPassword(body.Password, user.Password) {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Email or password invalid",
+			"error": "password invalid",
 		})
 		return
 	}
