@@ -98,13 +98,14 @@ func (h *handler) InsertNote(ctx *gin.Context) {
 // UpdateNote implements Handler.
 func (h *handler) UpdateNote(ctx *gin.Context) {
 	var note Note
+	user := ctx.GetString("user")
+	note.User_id = user
 	if ctx.BindJSON(&note) != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to read request",
 		})
 		return
 	}
-
 	_, err := h.service.UpdateNote(ctx, note)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
