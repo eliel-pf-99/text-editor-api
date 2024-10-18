@@ -62,7 +62,7 @@ func (h *handler) Auth(c *gin.Context) {
 func (h *handler) Signup(c *gin.Context) {
 	var body UserSignUp
 
-	if c.Bind(&body) != nil {
+	if c.BindJSON(&body) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to read request",
 		})
