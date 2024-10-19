@@ -83,7 +83,8 @@ func (h *handler) Signup(c *gin.Context) {
 	_, err = h.service.InsertUser(c, body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Failed to create user",
+			"message": "Failed to create user",
+			"error":   err.Error(),
 		})
 		return
 	}
