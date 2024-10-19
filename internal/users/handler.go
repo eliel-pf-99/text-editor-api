@@ -2,6 +2,7 @@ package users
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -68,6 +69,8 @@ func (h *handler) Signup(c *gin.Context) {
 		})
 		return
 	}
+
+	log.Println("req:", body.Email, body.Name)
 
 	_, err := h.service.FindUserByEmail(c, body.Email)
 	if err == nil {
