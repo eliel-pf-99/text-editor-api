@@ -33,6 +33,7 @@ func main() {
 	note_handler := notes.NewHandler(note_service)
 
 	r := gin.Default()
+	r.LoadHTMLFiles("index.html")
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -40,6 +41,12 @@ func main() {
 		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
 	}))
+
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.HTML(http.StatusOK, "index.html", gin.H{
+			"index": "Text Editor",
+		})
+	})
 
 	r.POST("/signup", user_handler.Signup)
 	r.POST("/login", user_handler.Login)
